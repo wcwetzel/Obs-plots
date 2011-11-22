@@ -6,60 +6,124 @@
 # November 2011
 library(ggplot2)
 library(bbmle)
+library(spatstat)
+library(vegan)
+library(compiler)
+library(ape)
+library(spdep)
 
 d1 = read.csv(
 	'~/Documents/DATA/2010 DATA/FIELD/plot 1/plot1-2010-2011.csv')
-d2 = d1
+d1 = d1[!is.na(d1$galls2010),]
+d1$mgalls = with(d1, (galls2011 + galls2010)/2 )
+d1$vol = with(d1, d1/100 * d2/100 * h/100) # cubic meters
+d1$density = d1$galls2011/d1$vol
 
 
-#d2 = read.csv(
-#	'~/Documents/DATA/2010 DATA/FIELD/plot 2/plot2-2010-2011.csv')
+d2 = read.csv(
+	'~/Documents/DATA/2010 DATA/FIELD/plot 2/plot2-2010-2011.csv')
 d2 = d2[!is.na(d2$galls2010),]
 d2$mgalls = with(d2, (galls2011 + galls2010)/2 )
 d2$vol = with(d2, d1/100 * d2/100 * h/100) # cubic meters
 d2$density = d2$galls2011/d2$vol
 
-
-# let's stick with p2 for now since it has a larger sample size
-
-library(spatstat)
-
+# plot 1 set up
 # create window (landscape) in which to put points
-window = with( d2, owin(xrange=c(min(x), max(x)), yrange=c(min(y),
+window1 = with( d1, owin(xrange=c(min(x), max(x)), yrange=c(min(y),
 	max(y))) )
 # ppp dataset without marks
-dat = with(d2, ppp(x, y, window=window))
+dat1 = with(d1, ppp(x, y, window=window1))
 # create the ppp dataset with spatial coordinates 
 #	and plant data 'marks'
-markdat = with( d2, ppp(x, y, window=window, marks=data.frame(
+markdat1 = with( d1, ppp(x, y, window=window1, marks=data.frame(
 	galls2010=galls2010, galls2011=galls2011, vol=vol, density=density)) )
 
+# plot 2 set up
+# create window (landscape) in which to put points
+window2 = with( d2, owin(xrange=c(min(x), max(x)), yrange=c(min(y),
+	max(y))) )
+# ppp dataset without marks
+dat2 = with(d2, ppp(x, y, window=window2))
+# create the ppp dataset with spatial coordinates 
+#	and plant data 'marks'
+markdat2 = with( d2, ppp(x, y, window=window2, marks=data.frame(
+	galls2010=galls2010, galls2011=galls2011, vol=vol, density=density)) )
+
+
+
+
+
+
 # 1st analyze spatial point pattern of Artr
+##plot2
 # Ripley's K
-ripK = Kest(dat)
-plot(ripK)
-ripK.ci = envelope(dat, 'Kest')
-plot(ripK.ci)
+ripK1 = Kest(dat1)
+#plot(ripK1)
+ripK1.ci = spatstat::envelope(Y = dat1, fun = 'Kest', nsim=1000)
+plot(ripK1.ci, main="Ripley's K: Plot1")
 # Diggle's G function (empty space)
-G = Gest(dat)
-G.ci = envelope(dat, 'Gest')
-plot(G)
-plot(G.ci)
+G1 = Gest(dat1)
+G1.ci = spatstat::envelope(dat1, 'Gest', nsim=1000)
+#plot(G1)
+plot(G1.ci, main='G-function: Plot1')
 # Diggle's F function (nearest neighbor)
-F = Fest(dat)
-F.ci = envelope(dat, 'Fest')
-plot(F)
-plot(F.ci)
+F1 = Fest(dat1)
+F1.ci = spatstat::envelope(dat1, 'Fest', nsim=1000)
+#plot(F1)
+plot(F1.ci, main='F-function: Plot1')
 # J function
-J = Jest(dat)
-J.ci = envelope(dat, 'Jest')
-plot(J)
-plot(J.ci)
+J1 = Jest(dat1)
+J1.ci = spatstat::envelope(dat1, 'Jest', nsim=1000)
+#plot(J1)
+plot(J1.ci, main='J-function: Plot 1')
+
+
+##plot2
+# Ripley's K
+ripK2 = Kest(dat2)
+#plot(ripK2)
+ripK2.ci = spatstat::envelope(Y = dat2, fun = 'Kest', nsim=1000)
+plot(ripK2.ci, main="Ripley's K: Plot2")
+# Diggle's G function (empty space)
+G2 = Gest(dat2)
+G2.ci = spatstat::envelope(dat2, 'Gest', nsim=1000)
+#plot(G2)
+plot(G2.ci, main='G-function: Plot2')
+# Diggle's F function (nearest neighbor)
+F2 = Fest(dat2)
+F2.ci = spatstat::envelope(dat2, 'Fest', nsim=1000)
+#plot(F2)
+plot(F2.ci, main='F-function: Plot2')
+# J function
+J2 = Jest(dat2)
+J2.ci = spatstat::envelope(dat2, 'Jest', nsim=1000)
+#plot(J2)
+plot(J2.ci, main='J-function: Plot 2')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # mark correlation function- looks at correlation among marks on events
 # each spatial location is an event (a plant) and each mark is something
 # about that event
+
+d = d1
+markdat = markdat1
+window = window1
+
 mc1 = markcorr(markdat)
 #plot(mc1)
 #plot(mc1$galls2010$trans ~ mc1$galls2010$r, type='l')
@@ -76,11 +140,11 @@ boottrans2010 = matrix(ncol=nboot, nrow=length(mc1$galls2010$trans))
 bootiso2010 = matrix(ncol=nboot, nrow=length(mc1$galls2010$trans))
 boottrans2011 = matrix(ncol=nboot, nrow=length(mc1$galls2010$trans))
 bootiso2011 = matrix(ncol=nboot, nrow=length(mc1$galls2010$trans))
-bootdata = with(d2, ppp(x, y, window=window))
+bootdata = with(d, ppp(x, y, window=window))
 
 for(i in 1:nboot){
-	bootgalls2010 = sample(d2$galls2010, size=nrow(d2), replace=TRUE)
-	bootgalls2011 = sample(d2$galls2011, size=nrow(d2), replace=TRUE)
+	bootgalls2010 = sample(d$galls2010, size=nrow(d), replace=TRUE)
+	bootgalls2011 = sample(d$galls2011, size=nrow(d), replace=TRUE)
 	marks(bootdata) = data.frame(bootgalls2010, bootgalls2011)
 	mctemp = markcorr(bootdata)
 	boottrans2010[,i] = mctemp$bootgalls2010$trans
