@@ -47,9 +47,13 @@ anova(m1, m0)
 
 ggplot(data= d1flws, aes(x=mean.per.4, y=galls2011)) +
 	geom_point()+
+	theme_bw() +
+	opts( panel.grid.minor=theme_blank(), panel.grid.major=theme_blank(),
+	axis.title.x = theme_text(vjust = 0)) +
 	#stat_smooth(method='auto') +
 	#stat_smooth(method='lm') +
 	scale_x_continuous('Mean number of flowers per stalk') +
 	scale_y_continuous('Number of galls') +
 	geom_abline(intercept=coef(m1)['a'], slope=coef(m1)['b'])
+	
 
