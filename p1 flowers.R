@@ -33,9 +33,11 @@ plot(mgalls ~ flws, data= d1flws)
 
 plot(log(mdensity) ~ log(flwdens), data=d1flws)
 
-par(mfrow=c(1,2))
+par(mfrow=c(2,2))
 plot(galls2011 ~ mean.per.4, data= d1flws)
 plot(galls2011 ~ mean.per.1, data= d1flws)
+plot(galls2011 ~ inflono, data=d1flws)
+plot(galls2011 ~ flws, data= d1flws)
 
 ggplot(data= d1flws, aes(x=mean.per.4, y=galls2011)) +
 	geom_point()+
@@ -56,19 +58,22 @@ ggplot(data= d1flws, aes(x=flws, y=galls2011)) +
 	scale_y_continuous('Number of galls')
 
 
-
-
+d1flws = d1flws[d1flws$flws<60000,]
+d1flws = d1flws[d1flws$flwdens < 780000,]
 
 ## models ##
 
-# mean.per.4
+# mean.per.4 and mean.per.1
 m1 = mle2(galls2011 ~ dnbinom(mu=a + b * mean.per.4, size=k),
+	start=list(a=5, b=0, k=1), data= d1flws)
+
+m11 = mle2(galls2011 ~ dnbinom(mu=a + b * mean.per.1, size=k),
 	start=list(a=5, b=0, k=1), data= d1flws)
 
 m0 = mle2(galls2011 ~ dnbinom(mu=a, size=k),
 	start=list(a=5, k=1), data= d1flws)
 
-AICtab(m1, m0)
+AICtab(m1, m0, m11)
 
 anova(m1, m0)
 
@@ -78,18 +83,31 @@ ggplot(data= d1flws, aes(x=mean.per.4, y=galls2011)) +
 	opts( panel.grid.minor=theme_blank(), panel.grid.major=theme_blank(),
 	axis.title.x = theme_text(vjust = 0)) +
 	#stat_smooth(method='auto') +
-	#stat_smooth(method='lm') +
+	stat_smooth(method='lm') +
+	scale_x_continuous('Mean number of flowers per stalk') +
+	scale_y_continuous('Number of galls') 
+	#geom_abline(intercept=coef(m1)['a'], slope=coef(m1)['b'])
+
+ggplot(data= d1flws, aes(x=mean.per.1, y=galls2011)) +
+	geom_point()+
+	theme_bw() +
+	opts( panel.grid.minor=theme_blank(), panel.grid.major=theme_blank(),
+	axis.title.x = theme_text(vjust = 0)) +
+	#stat_smooth(method='auto') +
+	stat_smooth(method='lm') +
 	scale_x_continuous('Mean number of flowers per stalk') +
 	scale_y_continuous('Number of galls') +
-	geom_abline(intercept=coef(m1)['a'], slope=coef(m1)['b'])
+	geom_abline(intercept=coef(m11)['a'], slope=coef(m11)['b'])
 	
+
+
 # total flws
 
 m2 = mle2(galls2011 ~ dnbinom(mu=exp(a) + b * flws, size=k),
 	start=list(a=1, b=0, k=1), data= d1flws, trace=TRUE, method='SANN')
 
 
-AICtab(m2, m0)
+AICtab(m2, m0, m1)
 
 anova(m2, m0)
 
@@ -98,8 +116,8 @@ ggplot(data= d1flws, aes(x=flws, y=galls2011)) +
 	theme_bw() +
 	opts( panel.grid.minor=theme_blank(), panel.grid.major=theme_blank(),
 	axis.title.x = theme_text(vjust = 0)) +
-	#stat_smooth(method='auto') +
-	#stat_smooth(method='lm') +
+	stat_smooth(method='auto') +
+	stat_smooth(method='lm') +
 	scale_x_continuous('Mean number of flowers per stalk') +
 	scale_y_continuous('Number of galls') +
 	geom_abline(intercept=exp(coef(m2)['a']), slope=coef(m2)['b'])
@@ -110,9 +128,11 @@ m3 = mle2(galls2011 ~ dnbinom(mu=exp(a) + b * flws + c * vol, size=k),
 	start=list(a=1, b=0, c=0, k=1), data= d1flws, trace=TRUE, method='SANN')
 
 
-AICtab(m3, m2, m0)
+AICtab(m3, m2, m1, m0)
 
-anova(m2, m0)
+anova(m3, m0)
+
+plot(galls2011 ~ I(flws/vol), data=d1flws)
 
 ggplot(data= d1flws, aes(x=flws, y=galls2011)) +
 	geom_point()+
@@ -123,4 +143,4 @@ ggplot(data= d1flws, aes(x=flws, y=galls2011)) +
 	#stat_smooth(method='lm') +
 	scale_x_continuous('Mean number of flowers per stalk') +
 	scale_y_continuous('Number of galls') +
-	geom_abline(intercept=exp(coef(m2)['a']), slope=coef(m2)['b'])
+	geom_abline(intercept=exp(coef(m3)['a']), slope=coef(m3)['b'])
