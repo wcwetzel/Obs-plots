@@ -70,10 +70,13 @@ m1 = mle2(galls2011 ~ dnbinom(mu=a + b * mean.per.4, size=k),
 m11 = mle2(galls2011 ~ dnbinom(mu=a + b * mean.per.1, size=k),
 	start=list(a=5, b=0, k=1), data= d1flws)
 
+m111 = mle2(galls2011 ~ dnbinom(mu = a + b * log(flws + 1), size=k),
+	start=list(a=5, b=0, k=1), data=d1flws)
+
 m0 = mle2(galls2011 ~ dnbinom(mu=a, size=k),
 	start=list(a=5, k=1), data= d1flws)
 
-AICtab(m1, m0, m11)
+AICtab(m1, m0, m11, m111)
 
 anova(m1, m0)
 
@@ -107,9 +110,10 @@ m2 = mle2(galls2011 ~ dnbinom(mu=exp(a) + b * flws, size=k),
 	start=list(a=1, b=0, k=1), data= d1flws, trace=TRUE, method='SANN')
 
 
-AICtab(m2, m0, m1)
+AICtab(m2, m0, m1, m111)
 
 anova(m2, m0)
+anova(m2, m1)
 
 ggplot(data= d1flws, aes(x=flws, y=galls2011)) +
 	geom_point()+
