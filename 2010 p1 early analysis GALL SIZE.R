@@ -77,6 +77,10 @@ p2 = ggplot(data=data, aes(x=gall_diameter, colour=fate, fill=fate)) +
 	geom_bar()
 p2
 
+p3 = ggplot(data=data, aes(x=gall_diameter, colour=fate, fill=fate)) +
+	geom_bar(position='fill')
+p3
+
 m0h = mle2(HEALTHY ~ dbinom(size=1, prob=plogis(x)), start=list(x=0), data=data)
 m1h = mle2(HEALTHY ~ dbinom(size=1, prob=plogis(x + a * gall_length)), 
 	start=list(x=0, a=0), data=data)
