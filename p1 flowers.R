@@ -41,7 +41,7 @@ plot(galls2011 ~ flws, data= d1flws)
 
 ggplot(data= d1flws, aes(x=mean.per.4, y=galls2011)) +
 	geom_point()+
-	stat_smooth(method='auto') +
+	stat_smooth(method='lm') +
 	scale_x_continuous('Mean number of flowers per stalk') +
 	scale_y_continuous('Number of galls')
 

@@ -14,7 +14,7 @@ data = data[order(data$plant),] # sort data on plant ID number
 data$gvol = (4/3) * pi * (data$gall_diameter/2)^2 * data$gall_length/2
 # categorical variable for gall fate
 data$fate[data$HEALTHY==1] = 'healthy'
-data$fate[data$PARASITIZED==1] = 'patasitoid'
+data$fate[data$PARASITIZED==1] = 'parasitoid'
 data$fate[data$PREDATION==1] = 'predator'
 data$fate[data$UNK_MORT==1] = 'unk'
 
@@ -52,7 +52,7 @@ data2$unk.rate = with(data2, unk/galls)
 data2$s2 = with(data2,  healthy / (healthy + unk))
 #data2$s2[is.nan(data2$s2)] = 0 # don't want to do this. should be NaN
 
-#----------- survival and attack rates by gall size by gall ------------------#
+#-------ploting histograms or densities of survival and attack rates by gall size by gall -------#
 
 
 hist(data$gall_length)
@@ -70,17 +70,116 @@ plot(PREDATION ~ gall_diameter, data=data)
 plot(UNK_MORT ~ gall_diameter, data=data)
 
 p1 = ggplot(data=data, aes(x=gall_diameter, colour=fate, fill=fate)) +
-	geom_density(alpha=0.1, adjust=0.7)
+	geom_density(alpha=0.1, adjust=0.7) + theme_bw() +
+	opts( panel.grid.minor=theme_blank(), panel.grid.major=theme_blank(),
+	axis.title.x = theme_text(vjust = 0))
 p1
 
 p2 = ggplot(data=data, aes(x=gall_diameter, colour=fate, fill=fate)) +
-	geom_bar()
+	geom_bar() + theme_bw() +
+	opts( panel.grid.minor=theme_blank(), panel.grid.major=theme_blank(),
+	axis.title.x = theme_text(vjust = 0))
 p2
 
 p3 = ggplot(data=data, aes(x=gall_diameter, colour=fate, fill=fate)) +
-	geom_bar(position='fill')
+	geom_bar(position='fill') + theme_bw() +
+	opts( panel.grid.minor=theme_blank(), panel.grid.major=theme_blank(),
+	axis.title.x = theme_text(vjust = 0))
 p3
 
+p4 = ggplot(data=data[data$fate != 'predator',], aes(x=gall_diameter, colour=fate, fill=fate)) +
+	geom_bar(position='fill') + theme_bw() +
+	opts( panel.grid.minor=theme_blank(), panel.grid.major=theme_blank(),
+	axis.title.x = theme_text(vjust = 0))
+p4
+
+
+#--------------bin data and calculate precent parasitism, survival, predation for each bin------------#
+
+data$diamBins = cut(data$gall_diameter, breaks=seq(3, 11, by=1))
+with(data, table(diamBins, fate))
+binData = reshape(as.data.frame(with(data, table(diamBins, fate))), v.names='Freq', idvar= 'diamBins',
+	direction='wide', timevar='fate')
+binData$diam = seq(3.5, 10.5, by=1)
+
+# convert counts to proportions
+binData$ptism = with(binData, Freq.parasitoid/(Freq.parasitoid + Freq.healthy))
+binData$survivalFromPtism = with(binData, Freq.healthy/(Freq.parasitoid + Freq.healthy))
+
+binData$survivalRate = with(binData, Freq.healthy/(Freq.parasitoid + Freq.healthy + Freq.predator +
+	Freq.unk))
+binData$predRate = with(binData, Freq.predator/(Freq.parasitoid + Freq.healthy + Freq.predator))
+binData$ptismTot = with(binData, Freq.parasitoid/(Freq.parasitoid + Freq.healthy + Freq.predator +
+	Freq.unk))
+binData$predRateTot = with(binData, Freq.predator/(Freq.parasitoid + Freq.healthy + Freq.predator +
+	Freq.unk))
+binData$unkRate = with(binData, Freq.unk/(Freq.parasitoid + Freq.healthy + Freq.predator + Freq.unk))
+
+
+
+# plot
+plot(ptism ~ diamBins, data=binData, type='b')
+plot(survivalRate ~ diamBins, data=binData)
+plot(predRate ~ diamBins, data=binData)
+
+# just ptism and healthy
+plot(ptism ~ I(3:10), data=binData, type='b', col='red', ylab='rate', xlab='Binned gall diameter (mm)')
+points(survivalFromPtism ~ I(3:10), data=binData, type='b', col='blue', pch=20)
+legend(8, 1, c('Healthy', 'Parasitized'), col=c('blue', 'red'), lty=1, pch=c(21, 20))
+
+# total
+plot(ptismTot ~ seq(3.5,10.5,by=1), data=binData, type='b', col='red', ylab='rate', 
+	xlab='Binned gall diameter (mm)', ylim=c(0,1))
+points(survivalRate ~ seq(3.5,10.5,by=1), data=binData, type='b', col='blue', pch=20)
+points(predRateTot ~ seq(3.5,10.5,by=1), data=binData, type='b', col='yellow', pch=23)
+points(unkRate ~ seq(3.5,10.5,by=1), data=binData, type='b', col='violet', pch=15)
+legend(8, 1, c('Healthy', 'Parasitized', 'Predated', 'Unknown'), col=c('blue', 'red', 'yellow', 'violet'), 
+	lty=1, pch=c(20, 21, 23, 15))
+
+
+ggplot(data=binData, aes(x=diamBins, y=ptism)) +
+	geom_point() + stat_smooth(aes(group=1)) + theme_bw() +
+	opts( panel.grid.minor=theme_blank(), panel.grid.major=theme_blank(),
+	axis.title.x = theme_text(vjust = 0))
+
+ggplot(data=binData, aes(x=diamBins, y=survivalRate)) +
+	geom_point() + stat_smooth(aes(group=1)) + theme_bw() +
+	opts( panel.grid.minor=theme_blank(), panel.grid.major=theme_blank(),
+	axis.title.x = theme_text(vjust = 0))
+
+ggplot(data=binData, aes(x=diamBins, y=predRate)) +
+	geom_point() + stat_smooth(aes(group=1)) + theme_bw() +
+	opts( panel.grid.minor=theme_blank(), panel.grid.major=theme_blank(),
+	axis.title.x = theme_text(vjust = 0))
+
+#---------- diameter histogram plus binned survivorship and parasitism figure -------------#
+
+par(mar=c(5,4,4,5)+0.1)
+hist(data$gall_diameter, xlim=c(3,11), xlab='Gall diameter (mm)', 
+	ylab='Frequency', main='')
+par(new=TRUE)
+plot(survivalRate ~ diam, data=binData, xlim=c(3,11), xaxt='n', yaxt='n', 
+	xlab='', ylab='', type='b', col='green')
+axis(4, las=1)
+mtext('Rate', side=4, line=3)
+
+par(new=TRUE)
+plot(ptismTot ~ diam, data=binData, xlim=c(3,11), xaxt='n', yaxt='n', 
+	xlab='', ylab='', type='b', col='blue')
+
+par(new=TRUE)
+plot(predRateTot ~ diam, data=binData, xlim=c(3,11), xaxt='n', yaxt='n', 
+	xlab='', ylab='', type='b', col='red')
+
+par(new=TRUE)
+plot(unkRate ~ diam, data=binData, xlim=c(3,11), xaxt='n', yaxt='n', 
+	xlab='', ylab='', type='b', col='orange')
+
+
+
+
+
+#-------------- Binom modeling survival and attack probs by gall size ----------------------#
 m0h = mle2(HEALTHY ~ dbinom(size=1, prob=plogis(x)), start=list(x=0), data=data)
 m1h = mle2(HEALTHY ~ dbinom(size=1, prob=plogis(x + a * gall_length)), 
 	start=list(x=0, a=0), data=data)
