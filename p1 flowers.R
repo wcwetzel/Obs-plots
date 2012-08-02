@@ -4,6 +4,7 @@
 
 library(bbmle)
 library(ggplot2)
+library(rethinking)
 
 d1 = read.csv(
 	'~/Documents/DATA/2010 DATA/FIELD/plot 1/plot1-2010-2011.csv')
@@ -58,8 +59,8 @@ ggplot(data= d1flws, aes(x=flws, y=galls2011)) +
 	scale_y_continuous('Number of galls')
 
 
-d1flws = d1flws[d1flws$flws<60000,]
-d1flws = d1flws[d1flws$flwdens < 780000,]
+#d1flws = d1flws[d1flws$flws<60000,]
+#d1flws = d1flws[d1flws$flwdens < 780000,]
 
 ## models ##
 
@@ -80,16 +81,28 @@ AICtab(m1, m0, m11, m111)
 
 anova(m1, m0)
 
+post.m1 = sample.naive.posterior(m1)
+
+new.flws.per.4 = seq(0, max(d1flws$mean.per.4), length=1000)
+
+m1.ci = sapply(new.flws.per.4, 
+	function(z) HPDI(post.m1[,1] + post.m1[,2] *  z))
+m1.ci = as.data.frame(t(m1.ci))
+m1.ci$new.flws.per.4 = new.flws.per.4
+
 ggplot(data= d1flws, aes(x=mean.per.4, y=galls2011)) +
 	geom_point()+
 	theme_bw() +
 	opts( panel.grid.minor=theme_blank(), panel.grid.major=theme_blank(),
 	axis.title.x = theme_text(vjust = 0)) +
 	#stat_smooth(method='auto') +
-	stat_smooth(method='lm') +
+	#stat_smooth(method='lm') +
 	scale_x_continuous('Mean number of flowers per stalk') +
-	scale_y_continuous('Number of galls') 
-	#geom_abline(intercept=coef(m1)['a'], slope=coef(m1)['b'])
+	scale_y_continuous('Number of galls') +
+	geom_abline(intercept=coef(m1)['a'], slope=coef(m1)['b']) +
+	geom_line(aes(x=new.flws.per.4, y=m1.ci[,1]), linetype = 2) +
+	geom_line(aes(x=new.flws.per.4, y=m1.ci[,2]), linetype = 2)
+
 
 ggplot(data= d1flws, aes(x=mean.per.1, y=galls2011)) +
 	geom_point()+

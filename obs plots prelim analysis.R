@@ -3,6 +3,7 @@
 # October 2011
 library(ggplot2)
 library(bbmle)
+library(rethinking)
 d1 = read.csv(
 	'~/Documents/DATA/2010 DATA/FIELD/plot 1/plot1-2010-2011.csv')
 d1 = d1[!is.na(d1$galls2010),]

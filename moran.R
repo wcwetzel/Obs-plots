@@ -49,7 +49,7 @@ plot(d2$y ~ d2$x, cex=1+abs(residuals(m2, type='response'))/2)
 # for plot2
 # first create a matrix of inverse distance weights
 dists2 = as.matrix(dist(cbind(d2$x, d2$y)))
-dists.inv2 = 1/dists2
+dists.inv2 = 1/(1+dists2)
 diag(dists.inv2) = 0
 dists.inv2[1:5,1:5]
 Moran.I(d2$galls2010, dists.inv2)

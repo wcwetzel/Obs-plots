@@ -52,6 +52,9 @@ data2$unk.rate = with(data2, unk/galls)
 data2$s2 = with(data2,  healthy / (healthy + unk))
 #data2$s2[is.nan(data2$s2)] = 0 # don't want to do this. should be NaN
 
+#write.csv(data2, '~/Documents/DATA/2010 DATA/LAB/2010 plot1 gall dissections/2010 plot1 gall dissections WETZEL early analysis flws.csv')
+
+
 #-------ploting histograms or densities of survival and attack rates by gall size by gall -------#
 
 
@@ -69,11 +72,52 @@ plot(PARASITIZED ~ gall_diameter, data=data)
 plot(PREDATION ~ gall_diameter, data=data)
 plot(UNK_MORT ~ gall_diameter, data=data)
 
-p1 = ggplot(data=data, aes(x=gall_diameter, colour=fate, fill=fate)) +
-	geom_density(alpha=0.1, adjust=0.7) + theme_bw() +
+# this one is bad, cant compare between groups
+p1 = ggplot(data=data, aes(x=gall_diameter, colour=fate, fill=fate, group=fate)) +
+	geom_density(alpha=0.1, adjust=0.7, group=data$fate) + theme_bw() +
 	opts( panel.grid.minor=theme_blank(), panel.grid.major=theme_blank(),
 	axis.title.x = theme_text(vjust = 0))
 p1
+
+# this one is good!!
+p1.count = ggplot(data=data, aes(x=gall_diameter, group=fate, colour = fate, fill=fate)) +
+	scale_colour_brewer() +
+	scale_fill_brewer() +
+	geom_density(alpha=0.4, adjust=0.7, group=data$fate) + 
+	aes(y=..count..) +
+	scale_y_continuous('Count')+
+	scale_x_continuous('Gall diameter (mm)') +
+	theme_bw() +
+	opts( panel.grid.minor=theme_blank(), panel.grid.major=theme_blank(),
+	axis.title.x = theme_text(vjust = 0, size=12),
+	axis.title.y = theme_text(vjust = 0.5, angle=90, size=12))
+p1.count
+
+p1.fill = ggplot(data=data, aes(x=gall_diameter, colour=fate, fill=fate)) +
+	geom_density(alpha=0.1, adjust=0.7, position='fill') + theme_bw() +
+	opts( panel.grid.minor=theme_blank(), panel.grid.major=theme_blank(),
+	axis.title.x = theme_text(vjust = 0))
+p1.fill
+
+# this one is good too!
+p1.fillcount = ggplot(data=data, aes(x=gall_diameter, colour=fate, fill=fate)) +
+	aes(y=..count..)+
+	scale_colour_brewer() +
+	scale_fill_brewer() +
+	geom_density(adjust=0.7, position='fill') + theme_bw() +
+	scale_y_continuous('Proportion')+
+	scale_x_continuous('Gall diameter (mm)') +
+	opts( panel.grid.minor=theme_blank(), panel.grid.major=theme_blank(),
+	axis.title.x = theme_text(vjust = 0, size=12),
+	axis.title.y = theme_text(vjust = 0.5, angle=90, size=12))
+p1.fillcount
+
+
+p1.fill.nopred = ggplot(data=data[data$fate != 'predator',], aes(x=gall_diameter, colour=fate, fill=fate)) +
+	geom_density(alpha=0.1, adjust=0.7, position='fill') + theme_bw() +
+	opts( panel.grid.minor=theme_blank(), panel.grid.major=theme_blank(),
+	axis.title.x = theme_text(vjust = 0))
+p1.fill.nopred
 
 p2 = ggplot(data=data, aes(x=gall_diameter, colour=fate, fill=fate)) +
 	geom_bar() + theme_bw() +
@@ -129,7 +173,7 @@ legend(8, 1, c('Healthy', 'Parasitized'), col=c('blue', 'red'), lty=1, pch=c(21,
 
 # total
 plot(ptismTot ~ seq(3.5,10.5,by=1), data=binData, type='b', col='red', ylab='rate', 
-	xlab='Binned gall diameter (mm)', ylim=c(0,1))
+	xlab='Binned gall diameter (mm)', ylim=c(0,0.7))
 points(survivalRate ~ seq(3.5,10.5,by=1), data=binData, type='b', col='blue', pch=20)
 points(predRateTot ~ seq(3.5,10.5,by=1), data=binData, type='b', col='yellow', pch=23)
 points(unkRate ~ seq(3.5,10.5,by=1), data=binData, type='b', col='violet', pch=15)
@@ -329,3 +373,25 @@ lines(newdiam3, ci.mpnu1[1,], lty=2)
 lines(newdiam3, ci.mpnu1[2,], lty=2)
 
 
+#----- is var in gall size greater between plants than within plants? -------#
+
+plot(gall_diameter ~ plant, data=data[data$plant<1300,])
+
+data$fatecolor[data$fate=='healthy'] = 'green'
+data$fatecolor[data$fate=='parasitoid'] = 'purple'
+data$fatecolor[data$fate=='predator'] = 'orange'
+data$fatecolor[data$fate=='unk'] = 'wheat'
+plot(gall_diameter ~ plant, data=data[data$plant<1300,], pch=data$fate, col=data$fatecolor)
+
+plot(gall_diameter ~ plant, data=data[data$plant<1300 & data$HEALTHY==1,])
+
+plot(gall_diameter ~ as.factor(plant), data=data)
+plot(gall_diameter ~ as.factor(plant), data=data[data$HEALTHY==1,])
+
+
+
+a = aov(gall_diameter ~ as.factor(plant), data=data)
+summary(a)
+
+ah = aov(gall_diameter ~ as.factor(plant), data=data[data$HEALTHY==1,])
+summary(ah)
